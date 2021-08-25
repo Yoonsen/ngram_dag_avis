@@ -14,25 +14,21 @@ def sumword(words, period):
         wordlist = [','] + [y for y in wordlist if y != '']
     ref = d2.ngram_news(wordlist, period = period).sum(axis = 1)
     ref.columns = 'tot'
+    ref.index = ref.index.map(pd.Timestamp)
     return ref
 
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
-def ngram(word, period, smooth_slider):
-    res = pd.DataFrame()
-    #if " " in word:
-    #   bigram = word.split()[:2]
-    #    print('bigram i kjømda')
-    #    #res = nb.bigram(first = bigram [0], second = bigram [1], ddk = ddk, topic = subject, period = period)
-    #else:
-
+def ngram(word, period, smooth_slider, sammenlign):
+    
     res = d2.ngram_news(word, period = (period_slider[0], period_slider[1]))
     res.index = res.index.map(pd.Timestamp)
     
-#    if sammenlign != "":
-#        tot = sumword(sammenlign, period=(period_slider[0], period_slider[1]))
-#        for x in res:
-#            res[x] = res[x]/tot
+    if sammenlign != "":
+        tot = sumword(sammenlign, period=(period_slider[0], period_slider[1]))
+        for x in res:
+            res[x] = res[x]/tot
+    
     res = res.rolling(window = smooth_slider).mean()
 
     return res
@@ -48,12 +44,20 @@ st.title('Dagsplott for aviser')
 
 st.markdown('### Trendlinjer')
 
-st.sidebar.header('Input')
-words = st.text_input('Fyll inn ord eller bigram adskilt med komma. Det skilles mellom store og små bokstaver', "")
-if words == "":
-    words = "og"
+################################### Sammenlign ##################################
 
-#sammenlign = st.sidebar.text_input("Sammenling med summen av følgende ord - sum av komma og punktum er standard, som gir tilnærmet 10nde-del av inputordenes relativfrekvens", ".,")
+st.sidebar.header('Input')
+words = st.text_input('Fyll inn ord eller bigram adskilt med komma. Det skilles mellom store og små bokstaver', "frihet")
+
+sammenlign = st.sidebar.text_input("Sammenlingn med summen av en liste med ord. Om listen ikke er tom viser y-aksen antall forekomster pr summen av ordene det sammenlignes med. Er listen tom viser y-aksen antall forekomster", "")
+
+
+#################################### Glatting ############################################
+
+st.sidebar.header('Visning')
+smooth_slider = st.sidebar.slider('Glatting', 1, 21, 7)
+
+
 
 allword = list(set([w.strip() for w in words.split(',')]))[:30]
 
@@ -63,28 +67,23 @@ import datetime
 
 today = datetime.date.today()
 tomorrow = today + datetime.timedelta(days = 1)
-start_date = st.date_input('Startdato', today - datetime.timedelta(days = 400))
-end_date = st.date_input('Sluttdato', today)
+
+#########################  Angi periode ##################################
+st.sidebar.title("Periode")
+st.sidebar.write("Velg periode. Angi siste dato av en periode på 3 år")
+
+
+end_date = st.sidebar.date_input('', today)
+start_date = end_date - datetime.timedelta(days = 1100)
+
 delta = end_date - start_date
-if delta.days < 1000:
-    period_slider = (start_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d"))
-    #st.write(period_slider)
-else:
-    st.write('dagsplott ikke over 3 år')
-    
-    
-# wrapper for nb.frame() check if dataframe is empty before assigning names to columns
-def frm(x, y):
-    if not x.empty:
-        res = pd.DataFrame(x, columns = [y])
-    else:
-        res = x
-    return res
+period_slider = (start_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d"))
 
-st.sidebar.header('Visning')
-smooth_slider = st.sidebar.slider('Glatting', 1, 21, 7)
+df = ngram(allword, (period_slider[0], period_slider[1]), smooth_slider, sammenlign)
+st.line_chart(df)
 
-if delta.days < 1000 and delta.days > 0:
-    df = ngram(allword, (period_slider[0], period_slider[1]), smooth_slider)
-    st.line_chart(df)
+
+
+
+
 
