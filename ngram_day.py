@@ -85,7 +85,7 @@ st.sidebar.write("Velg dato og lengde på periode, antall dager før og etter")
 
 mid_date = st.sidebar.date_input('Dato', last_date - datetime.timedelta(days = 183))
 
-period_size = st.sidebar.number_input("Antall dager før og etter, maks 730, minimum 100", min_value= min_days, max_value = max_days, value = 183)
+period_size = st.sidebar.number_input("Antall dager før og etter, maks {mx}, minimum {mn}".format(mx=max_days, mn = min_days), min_value= min_days, max_value = max_days, value = max_days)
 
 
 
