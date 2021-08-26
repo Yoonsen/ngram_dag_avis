@@ -41,7 +41,7 @@ def ngram(word, mid_date, sammenlign):
 def adjust(df, date, days, smooth):
     ts = pd.Timestamp(date)
     td = pd.Timedelta(days = days - 1)
-    s = pd.Timestamp(min(pd.Timestamp.today(), pd.Timestamp((ts - pd.Timedelta(days = days + min_days)))).strftime("%Y%m%d"))
+    s = pd.Timestamp(min(pd.Timestamp("20210701"), pd.Timestamp((ts - pd.Timedelta(days = days + min_days)))).strftime("%Y%m%d"))
     e = pd.Timestamp(min(pd.Timestamp.today(), pd.Timestamp((ts + td))).strftime("%Y%m%d"))
     mask = (df.index >= s) & (df.index <= e)
     #st.write(s,e)
@@ -72,15 +72,19 @@ allword = list(set([w.strip() for w in words.split(',')]))[:30]
 #################################### Glatting ############################################
 
 st.sidebar.header('Visning')
+
 smooth_slider = st.sidebar.slider('Glatting', 1, 21, 3)
 
+last_date = datetime.datetime.strptime("20200701", '%Y%m%d')
 
 #########################  Angi periode ##################################
 
 st.sidebar.title("Periode")
 
-st.sidebar.write("Velg lengde på periode og midt-dato")
-mid_date = st.sidebar.date_input('Dato', datetime.datetime.today() - datetime.timedelta(days = 183))
+st.sidebar.write("Velg dato og lengde på periode, antall dager før og etter")
+
+mid_date = st.sidebar.date_input('Dato', last_date - datetime.timedelta(days = 183))
+
 period_size = st.sidebar.number_input("Antall dager før og etter, maks 730, minimum 100", min_value= min_days, max_value = max_days, value = 183)
 
 
