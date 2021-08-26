@@ -7,6 +7,8 @@ from PIL import Image
 
 import datetime
 
+max_days = 730
+min_days = 3
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
 def sumword(words, period):
@@ -21,8 +23,10 @@ def sumword(words, period):
 
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
-def ngram(word, period, smooth_slider, sammenlign):
-    
+def ngram(word, mid_date, sammenlign):
+    #st.write('innom')
+    period = ((mid_date - datetime.timedelta(days = max_days)).strftime("%Y%m%d"),
+              (mid_date + datetime.timedelta(days = max_days)).strftime("%Y%m%d"))
     res = d2.ngram_news(word, period = period)
     res.index = res.index.map(pd.Timestamp)
     
@@ -30,11 +34,20 @@ def ngram(word, period, smooth_slider, sammenlign):
         tot = sumword(sammenlign, period = period)
         for x in res:
             res[x] = res[x]/tot
-    
-    res = res.rolling(window = smooth_slider).mean()
 
     return res
 
+@st.cache(suppress_st_warning = True, show_spinner = False)
+def adjust(df, date, days, smooth):
+    ts = pd.Timestamp(date)
+    td = pd.Timedelta(days = days - 1)
+    s = pd.Timestamp(min(pd.Timestamp.today(), pd.Timestamp((ts - pd.Timedelta(days = days + min_days)))).strftime("%Y%m%d"))
+    e = pd.Timestamp(min(pd.Timestamp.today(), pd.Timestamp((ts + td))).strftime("%Y%m%d"))
+    mask = (df.index >= s) & (df.index <= e)
+    #st.write(s,e)
+    #st.write(df.loc[s])
+    res = df.loc[mask].rolling(window = smooth).mean()
+    return res
 
 
 image = Image.open('NB-logo-no-eng-svart.png')
@@ -68,19 +81,24 @@ st.sidebar.title("Periode")
 
 st.sidebar.write("Velg lengde på periode og midt-dato")
 mid_date = st.sidebar.date_input('Dato', datetime.datetime.today() - datetime.timedelta(days = 183))
-period_size = st.sidebar.number_input("Antall dager før og etter, maks 730, minimum 100", min_value= 100, max_value = 730, value = 183)
+period_size = st.sidebar.number_input("Antall dager før og etter, maks 730, minimum 100", min_value= min_days, max_value = max_days, value = 183)
 
 
 
 ### Beregn start og slutt, og vis frem graf
 
-start_date = mid_date - datetime.timedelta(days = period_size)
-end_date = mid_date + datetime.timedelta(days = period_size)
+start_date = min(datetime.date.today() - datetime.timedelta(days = 2), mid_date - datetime.timedelta(days = period_size))
+end_date = min(datetime.date.today(), mid_date + datetime.timedelta(days = period_size))
 
 period = (start_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d"))
 #st.write(mid_date, period)
-df = ngram(allword, period, smooth_slider, sammenlign)
-st.line_chart(df)
+
+## init values
+
+df = ngram(allword, mid_date, sammenlign)
+#st.write(df.index)
+df_show = adjust(df, mid_date, period_size, smooth_slider)
+st.line_chart(df_show)
 
 
 
