@@ -4,20 +4,24 @@ import streamlit as st
 import dhlab_v2 as d2
 import pandas as pd
 from PIL import Image
-
+import json
 import datetime
 
 max_days = 730
 min_days = 3
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
-def sumword(words, period):
+def titles():
+    return json.load(open('titles.json', encoding = 'utf-8'))
+
+@st.cache(suppress_st_warning=True, show_spinner = False)
+def sumword(words, period, title = None):
     wordlist =   [x.strip() for x in words.split(',')]
     # check if trailing comma, or comma in succession, if so count comma in
     if '' in wordlist:
         wordlist = [','] + [y for y in wordlist if y != '']
     try:
-        ref = d2.ngram_news(wordlist, period = period).sum(axis = 1)
+        ref = d2.ngram_news(wordlist, period = period, title = title).sum(axis = 1)
         ref.columns = 'tot'
         ref.index = ref.index.map(pd.Timestamp)
     except AttributeError:
@@ -27,16 +31,16 @@ def sumword(words, period):
 
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
-def ngram(word, mid_date, sammenlign):
+def ngram(word, mid_date, sammenlign, title = None):
     #st.write('innom')
     period = ((mid_date - datetime.timedelta(days = max_days)).strftime("%Y%m%d"),
               (mid_date + datetime.timedelta(days = max_days)).strftime("%Y%m%d"))
     try:
-        res = d2.ngram_news(word, period = period)
+        res = d2.ngram_news(word, period = period, title = title)
         res.index = res.index.map(pd.Timestamp)
 
         if sammenlign != "":
-            tot = sumword(sammenlign, period = period)
+            tot = sumword(sammenlign, period = period, title = title)
             for x in res:
                 res[x] = res[x]/tot
     except AttributeError:
@@ -72,14 +76,19 @@ st.markdown('### Trendlinjer')
 
 ################################### Sammenlign ##################################
 
-st.sidebar.header('Input')
+
 words = st.text_input('Skriv inn ett eller flere enkeltord adskilt med komma. Det er forskjell på store og små bokstaver', "frihet")
 
+st.sidebar.header('Input')
 sammenlign = st.sidebar.text_input("Sammenlingn med summen av en liste med ord. Om listen ikke er tom viser y-aksen antall forekomster pr summen av ordene det sammenlignes med. Er listen tom viser y-aksen antall forekomster", "")
 
 allword = list(set([w.strip() for w in words.split(',')]))[:30]
 
+avisnavn = st.sidebar.selectbox("Begynn å skrive navnet på en avis, og velg fra listen", titles(), index=0)
+if avisnavn == "--ingen--":
+    avisnavn = None
 
+#st.write(avisnavn)
 #################################### Glatting ############################################
 
 st.sidebar.header('Visning')
@@ -106,11 +115,11 @@ start_date = min(datetime.date.today() - datetime.timedelta(days = 2), mid_date 
 end_date = min(datetime.date.today(), mid_date + datetime.timedelta(days = period_size))
 
 period = (start_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d"))
-#st.write(mid_date, period)
 
+         
 ## init values
 
-df = ngram(allword, mid_date, sammenlign)
+df = ngram(allword, mid_date, sammenlign, title = avisnavn)
 #st.write(df.index)
 df_show = adjust(df, mid_date, period_size, smooth_slider)
 st.line_chart(df_show)
