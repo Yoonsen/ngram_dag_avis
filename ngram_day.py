@@ -51,17 +51,22 @@ def ngram(word, mid_date, sammenlign, title = None):
 @st.cache(suppress_st_warning = True, show_spinner = False)
 def adjust(df, date, days, smooth):
     res = df
+    
     try:
         ts = pd.Timestamp(date)
         td = pd.Timedelta(days = days - 1)
         s = pd.Timestamp(min(pd.Timestamp("20210701"), pd.Timestamp((ts - pd.Timedelta(days = days + min_days)))).strftime("%Y%m%d"))
         e = pd.Timestamp(min(pd.Timestamp.today(), pd.Timestamp((ts + td))).strftime("%Y%m%d"))
         mask = (df.index >= s) & (df.index <= e)
+        
         #st.write(s,e)
         #st.write(df.loc[s])
+        
         res = df.loc[mask].rolling(window = smooth).mean()
+    
     except AttributeError:
         st.write('...tom ramme...')
+    
     return res
 
 
