@@ -6,6 +6,7 @@ import pandas as pd
 from PIL import Image
 import json
 import datetime
+import matplotlib.pyplot as plt
 
 max_days = 730
 min_days = 3
@@ -36,7 +37,7 @@ def ngram(word, mid_date, sammenlign, title = None):
     period = ((mid_date - datetime.timedelta(days = max_days)).strftime("%Y%m%d"),
               (mid_date + datetime.timedelta(days = max_days)).strftime("%Y%m%d"))
     try:
-        res = d2.ngram_news(word, period = period, title = title)
+        res = d2.ngram_news(word, period = period, title = title).sort_index()
         res.index = res.index.map(pd.Timestamp)
 
         if sammenlign != "":
@@ -72,7 +73,7 @@ def adjust(df, date, days, smooth):
 
 image = Image.open('NB-logo-no-eng-svart.png')
 st.image(image, width = 200)
-st.markdown('Se mer om å drive analytisk DH på [DHLAB-siden](https://nbviewer.jupyter.org/github/DH-LAB-NB/DHLAB/blob/master/DHLAB_ved_Nasjonalbiblioteket.ipynb), og korpusanalyse via web [her](https://beta.nb.no/korpus/)')
+st.markdown('Les mer om analytisk DH på [DHLAB-siden](https://nbviewer.jupyter.org/github/DH-LAB-NB/DHLAB/blob/master/DHLAB_ved_Nasjonalbiblioteket.ipynb)')
 
 
 st.title('Dagsplott for aviser')
@@ -100,19 +101,25 @@ st.sidebar.header('Visning')
 
 smooth_slider = st.sidebar.slider('Glatting', 1, 21, 3)
 
+graftype = st.sidebar.selectbox('Matplotlib eller Streamlit', ['Matplotlib', 'Streamlit'], index = 1)
+if graftype == 'Matplotlib':
+    alfa = st.sidebar.number_input('Gjennomsiktighet', min_value = 0.1, max_value = 1., value = 0.9)
+    width = st.sidebar.number_input('Linjetykkelse', min_value = 0.1, max_value = 5., value = 0.8)
+    
 last_date = datetime.datetime.strptime("20200701", '%Y%m%d')
 
 #########################  Angi periode ##################################
 
 st.sidebar.title("Periode")
 
-st.sidebar.write("Velg dato og lengde på periode, antall dager før og etter")
+st.sidebar.markdown("Velg dato og lengde på periode, antall dager før og etter")
 
 mid_date = st.sidebar.date_input('Dato', last_date - datetime.timedelta(days = 183))
 
 period_size = st.sidebar.number_input("Antall dager før og etter, maks {mx}, minimum {mn}".format(mx=max_days, mn = min_days), min_value= min_days, max_value = max_days, value = max_days)
 
 
+ 
 
 ### Beregn start og slutt, og vis frem graf
 
@@ -121,15 +128,49 @@ end_date = min(datetime.date.today(), mid_date + datetime.timedelta(days = perio
 
 period = (start_date.strftime("%Y%m%d"), end_date.strftime("%Y%m%d"))
 
+def show_data(data, alfa = 0.9, width = 0.8):
+    fontsize = 12
+
+    fig, ax = plt.subplots() #nrows=2, ncols=2)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    ax.spines["bottom"].set_color("grey")
+    ax.spines["left"].set_color("grey")
+    ax.spines["bottom"].set_linewidth(0.5)
+    ax.spines["left"].set_linewidth(0.5)
+    ax.legend(loc='upper left', frameon=False)
+    ax.spines["left"].set_visible(True)
+
+    plt.rcParams.update({'font.size': 8,
+                        'font.family': 'monospace',
+                        'font.monospace':'Courier'})
+
+    plt.legend(loc = 2, prop = {
+        'size': fontsize})
+    #plt.xlabel('Ordliste', fontsize= fontsize*0.8)
+    #plt.ylabel('Frekvensvekt', fontsize= fontsize*0.8)
+    data.plot(ax=ax, figsize = (8,4), kind='line', rot=20, alpha = alfa, lw = width)
+
+    st.pyplot(fig)
+
+    #st.write('som tabell')
+    #st.write(data.style.background_gradient())
          
 ## init values
 
 df = ngram(allword, mid_date, sammenlign, title = avisnavn)
 #st.write(df.index)
+
+#### ------------- Plot the graf -----------------
+
 df_show = adjust(df, mid_date, period_size, smooth_slider)
-st.line_chart(df_show)
-
-
+if graftype == 'Matplotlib':
+    show_data(df_show, alfa, width)
+elif graftype == 'Streamlit':
+    st.line_chart(df_show)
+else:
+    st.line_chart(df_show)
 
 
 
