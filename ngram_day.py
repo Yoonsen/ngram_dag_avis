@@ -8,7 +8,7 @@ import json
 import datetime
 import matplotlib.pyplot as plt
 
-max_days = 730
+max_days = 3700
 min_days = 3
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
@@ -37,7 +37,7 @@ def ngram(word, mid_date, sammenlign, title = None):
     period = ((mid_date - datetime.timedelta(days = max_days)).strftime("%Y%m%d"),
               (mid_date + datetime.timedelta(days = max_days)).strftime("%Y%m%d"))
     try:
-        res = d2.ngram_news(word, period = period, title = title).sort_index()
+        res = d2.ngram_news(word, period = period, title = title).fillna(0).sort_index()
         res.index = res.index.map(pd.Timestamp)
 
         if sammenlign != "":
@@ -71,9 +71,9 @@ def adjust(df, date, days, smooth):
     return res
 
 
-image = Image.open('NB-logo-no-eng-svart.png')
-st.image(image, width = 200)
-st.markdown('Les mer om analytisk DH på [DHLAB-siden](https://nbviewer.jupyter.org/github/DH-LAB-NB/DHLAB/blob/master/DHLAB_ved_Nasjonalbiblioteket.ipynb)')
+image = Image.open('DHlab_logo_web_en_black.png')
+st.sidebar.image(image, width = 200)
+st.sidebar.markdown('Les mer på [DHLAB-siden](https://nb.no/dh-lab/)')
 
 
 st.title('Dagsplott for aviser')
@@ -114,11 +114,10 @@ st.sidebar.title("Periode")
 
 st.sidebar.markdown("Velg dato og lengde på periode, antall dager før og etter")
 
-mid_date = st.sidebar.date_input('Dato', last_date - datetime.timedelta(days = 183))
 
-period_size = st.sidebar.number_input("Antall dager før og etter, maks {mx}, minimum {mn}".format(mx=max_days, mn = min_days), min_value= min_days, max_value = max_days, value = max_days)
+mid_date = st.sidebar.date_input('Dato', last_date - datetime.timedelta(days = int(max_days/2)))
 
-
+period_size = st.sidebar.number_input(f"Lengde på periode i antall dager, maks {max_days}, minimum {min_days}", min_value= min_days, max_value = max_days, value = max_days)
  
 
 ### Beregn start og slutt, og vis frem graf
