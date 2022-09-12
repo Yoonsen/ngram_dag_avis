@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import streamlit as st
-import dhlab_v2 as d2
+import dhlab.api.dhlab_api as api
 import pandas as pd
 from PIL import Image
 import json
@@ -22,7 +22,7 @@ def sumword(words, period, title = None):
     if '' in wordlist:
         wordlist = [','] + [y for y in wordlist if y != '']
     try:
-        ref = d2.ngram_news(wordlist, period = period, title = title).sum(axis = 1)
+        ref = api.ngram_news(wordlist, period = period, title = title).sum(axis = 1)
         ref.columns = 'tot'
         ref.index = ref.index.map(pd.Timestamp)
     except AttributeError:
@@ -37,7 +37,7 @@ def ngram(word, mid_date, sammenlign, title = None):
     period = ((mid_date - datetime.timedelta(days = max_days)).strftime("%Y%m%d"),
               (mid_date + datetime.timedelta(days = max_days)).strftime("%Y%m%d"))
     try:
-        res = d2.ngram_news(word, period = period, title = title).fillna(0).sort_index()
+        res = api.ngram_news(word, period = period, title = title).fillna(0).sort_index()
         res.index = res.index.map(pd.Timestamp)
 
         if sammenlign != "":
