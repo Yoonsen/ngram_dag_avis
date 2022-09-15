@@ -13,7 +13,8 @@ min_days = 3
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
 def titles():
-    return json.load(open('titles.json', encoding = 'utf-8'))
+    b = pd.read_csv('titles.csv')
+    return list(b.title)
 
 @st.cache(suppress_st_warning=True, show_spinner = False)
 def sumword(words, period, title = None):
