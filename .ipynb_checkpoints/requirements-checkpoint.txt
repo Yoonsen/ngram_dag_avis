@@ -1,6 +1,7 @@
+dhlab >= 2.0.0
 pandas
 streamlit
 matplotlib
 numpy
-requests
 Pillow
+openpyxl
